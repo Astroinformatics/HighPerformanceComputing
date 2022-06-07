@@ -25,7 +25,8 @@ Summer School participants will be provided instructions for accessing a Pluto s
 julia> using Pkg
 julia> Pkg.add("Pluto")
 ```
-Steps 1 & 3 only need to be done once per computer.
+(Steps 1 & 3 only need to be done once per computer.)
+
 4.  Start Pluto
 ```julia
 julia> using Pluto
@@ -33,9 +34,9 @@ julia> Pluto.run()
 ```
 5.  Open the Pluto notebook for your lab
 
-### Running Jupter/Julia notebooks 
+### Running Jupter notebooks with a Julia kernel on your local computer
 Summer School participants will be provided instructions for accessing JupyterLab server.  
-Others may install Python 3 and Jupyter (or JupyterLab) on their local computer or use [Google Colab](https://colab.research.google.com/) to open the Jupyter notebooks.
+Others may install Python 3 and Jupyter (or JupyterLab) on their local computer or use [Google Colab](https://colab.research.google.com/) to open the Jupyter notebooks.  Probably the easiest way to do that is with the following steps:
 1.  Download and install current version of Julia from [julialang.org](https://julialang.org/downloads/).
 2.  Run julia
 3.  From the Julia REPL (command line), type
@@ -43,7 +44,8 @@ Others may install Python 3 and Jupyter (or JupyterLab) on their local computer 
 julia> using Pkg
 julia> Pkg.add("IJulia")
 ```
-Steps 1 & 3 only need to be done once per computer.
+(Steps 1 & 3 only need to be done once per computer.)
+
 4.  Start Jupyter
 ```julia
 julia> using IJulia
