@@ -1,0 +1,11 @@
+.git
+*.plutostate
+*.html
+Manifest.toml
+*/Manifest.toml
+tools/*
+
+.ipynb_checkpoints
+__pycache__
+
+
