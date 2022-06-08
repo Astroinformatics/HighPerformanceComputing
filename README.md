@@ -6,7 +6,7 @@
 
 -----
 This repository contains the following computational notebooks and supporting files: 
-- TBD
+- gpu_linear_algebra.ipynb: Jupyter notebook comapring performance of CPU and GPU for common linear algebra tasks
 - 
 
 Files ending in .jl are Pluto notebooks and files ending in .ipynb are Jupyter notebooks, both written in Julia.
