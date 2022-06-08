@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.4
+# v0.19.8
 
 using Markdown
 using InteractiveUtils
@@ -28,6 +28,7 @@ begin
 	using Plots#, LaTeXStrings
 	using ValueHistories
 	using PlutoUI, HypertextLiteral, ProgressLogging
+	using BenchmarkTools
 end
 
 # ╔═╡ 1d8fe699-810b-44ba-a9cd-80816338e08c
@@ -64,7 +65,7 @@ When we train our neural network on the GPU, it will only update the weights and
 
 # ╔═╡ a5ddca67-7c57-45b9-a7e8-0cc2b342e6da
 md"""
-Next, we'll transfer the training and validation dataset from the CPU host to the GPU's memory.  We can use either the `cu` function provided by the CUDA package or Flux's convenience function (`gpu`) and syntax for transfering data.
+Next, we'll transfer the training and validation dataset from the CPU host to the GPU's memory.  We could use either the `cu` function provided by the CUDA package or Flux's convenience function (`gpu`) and syntax for transfering data.
 """
 
 # ╔═╡ 67995b86-9706-424f-ba21-2698e7e83417
@@ -72,97 +73,66 @@ md"""
 Those are the only changes necessary to train our neural network on a GPU!
 """
 
-# ╔═╡ 83cb30c2-db96-4d68-88f9-09e25b6bfa70
-md"""
-## Specify the neural network architecure
-Below you can sset a number of hidden layers (up to 3) and number of hidden nodes in each layer. 
-"""
-
 # ╔═╡ f5f1ff7c-c674-4147-9ec1-b1b0f1a8d18a
 md"Number of hidden layers: $(@bind num_hidden_layers NumberField(1:3,default=1))"
-
 
 # ╔═╡ ffd43619-b774-4bff-9a44-c7daf0ec7bcf
 md"""
 ## Benchmark the training cost
 
-Before we train the neural network, let's compare the time required to perform one iteration of updating the neural network weights on both the CPU and the GPU.
+Before we train the neural network, let's compare the time required to perform one iteration of updating the neural network weights on both the CPU and the GPU.  (For large network sizes, you may want to disable CPU benchmarking to avoid delays.)
+"""
+
+# ╔═╡ d54fa17a-9bab-4034-97b9-902880901a3a
+md"""
+Enable CPU benchmarking. $(@bind benchmark_cpu CheckBox(default=true))
 """
 
 # ╔═╡ 8eed2ad1-f58c-490e-b612-17cf44795337
 md"""
-**Question:** How did the time required to perform one training iteration compare when using the CPU and the GPU?  
-
-**Question:** Try varrying the number of hidden nodes in the hidden layer?  How does the time required change?  For what size hidden layer is using the GPU at least twice as fast as the using the CPU?
+**Question:** Try varrying the number of hidden nodes in the hidden layer.  How does the time required change?  For what size hidden layer is using the GPU at least 100x as fast as the using the CPU?
 
 **Question:**  What are the implications for what types of neural network architectures are well suited for getting a big speed-up by using a GPU?
 """
 
 # ╔═╡ 2a69344b-dcb4-4a82-beaf-a787d63f632e
 md"""
-## Train the Neural Network
+# Train the Neural Network
 """
 
 # ╔═╡ 1009975c-9a8b-40f6-b9c5-b69820adc6b1
 md"""
-Check the box below, once you're found a neural network architecture above that you'd like to try training.  
-(If you want to prevent the neural network from being retrained while you tinker with  you the number of layers, you can uncheck the box below while you make multiple changes, and recheck it once you're ready to start the training.)
+Check the box below, once you're selected a neural network architecture above that you'd like to try training.  
 
-Ready to train neural network. $(@bind ready_for_hidden CheckBox(default=true))
+Ready to train neural network. $(@bind ready_for_hidden CheckBox(default=false))
 """
 
 # ╔═╡ 8480c2db-3e21-46d8-9725-554904cdb754
 md"""
-**Question:**  How does the number of iterations required to acheive a given value of the loss function change when you increase the number of nodes in the hidden layer(s)?  
+**Question:**  How does the number of iterations required to acheive a given value of the loss function change when you increase the number of nodes in the hidden layer(s)?   (If you want to prevent the neural network from being retrained while you tinker with  you the number of layers, you can uncheck the box above while you make multiple changes, and recheck it once you're ready to start the training.)
 
-**Question:**  How does the number of iterations required to acheive a given value of the loss function change when you increase the number of hidden layers (keeping the nubmer of nodes per hidden layer constant)?  
+**Question:**  How does the number of iterations required to acheive a given value of the loss function change when you increase the number of hidden layers (keeping the nubmer of nodes per hidden layer constant)?  (If you'd like to continue training the neural network for more iterations, you can click `Submit` above to have it resume training from where it left off.)
 
 **Question:**  What are the implications for choosing the number of hidden layers and nodes per layer, if you have a set ammount of GPU computing time avalible? 
 """
 
+# ╔═╡ 89809f9d-e024-4676-bd04-e3af88a39215
+md"""# Thank you!
+Thanks for participating in the Astroinformatics Summer School.
+We hope you'll join us for the final Q&A session, where you can ask big picture questions about the future of Astroinformatics and machine learning for astrononomy & astrophysics.
+"""
+
 # ╔═╡ f829ad0c-9e7a-4e92-9f6b-86786ed317e6
-md"# Code reused from previous lab"
+md"""
+# Code reused from previous lab
+You don't need to read any of the code below to complete the lab.  Of course, all the code is avaliable, if you'd like to explore and tinker.
+"""
 
 # ╔═╡ 783788a0-6f9a-4225-98e6-5030d9f21712
 md"""
 ## Prepare the data
 ### Read data from file
 """
-
-# ╔═╡ 1c792c1d-f1e8-4e5f-8a76-5c7ca5fb8587
-md"""
-### Create subsets of data for training & testing
-We will divide the dataset into two distinct subsets:  `df_cv` (a DataFrame of observations to be used with a cross-validation procedure) and `df_test` (a DataFrame of observations to be used to testing our final model), one for model building and the second for testing our final model.  
-"""
-
-# ╔═╡ 26635f45-1e34-4025-8151-2185d8d84e06
-md"""
-Undersample non-high-${z}$ quasars to make for balanced datasets?
-$(@bind make_balanced CheckBox(default=true))
-"""
-
-# ╔═╡ ffe4cdc7-4863-4f0e-b790-4b86afcc56b8
-md"""
-### Constructing subset for K-fold cross-validation
-We split `df_cv` into subsets of the observations for training and validating as part of a **k-fold cross-validation** process.
-Below, you can choose how many "folds" to use and which fold will be used when training our neural network classifier and which fold will be used for training.
-"""
-
-# ╔═╡ 7e0341a3-e52e-4a19-b9ac-969ebdd2161f
-md"""
-For convenience sake, we'll define several dataframes containing data from your chosen fold.  
-"""
-
-# ╔═╡ ffc98faf-d076-40df-ad6e-94d89f7446f8
-md"""
-## Code to setup neural network
-"""
-
-# ╔═╡ aca55f65-b364-4c20-8cc1-1dd0d4102ea1
-loss(x,y) = Flux.binarycrossentropy(model_nn0(x), y)
-
-# ╔═╡ afccede8-4563-4a7e-bca4-4754349e73b3
-md"##  Setup & Helper functions"
 
 # ╔═╡ 86744470-2b37-45c1-ab76-af838c122378
 function find_or_download_data(data_filename::String, url::String)
@@ -203,6 +173,18 @@ begin
 	df
 end
 
+# ╔═╡ 1c792c1d-f1e8-4e5f-8a76-5c7ca5fb8587
+md"""
+### Create subsets of data for training & testing
+We will divide the dataset into two distinct subsets:  `df_cv` (a DataFrame of observations to be used with a cross-validation procedure) and `df_test` (a DataFrame of observations to be used to testing our final model), one for model building and the second for testing our final model.  
+"""
+
+# ╔═╡ 26635f45-1e34-4025-8151-2185d8d84e06
+md"""
+Undersample non-high-${z}$ quasars to make for balanced datasets?
+$(@bind make_balanced CheckBox(default=true))
+"""
+
 # ╔═╡ 0985bcc3-e686-4aa9-b832-0141cb27c4a4
 begin
 	frac_data_used_for_cv = 0.66
@@ -213,6 +195,13 @@ begin
 	end
 end;
 
+# ╔═╡ ffe4cdc7-4863-4f0e-b790-4b86afcc56b8
+md"""
+### Constructing subset for K-fold cross-validation
+We split `df_cv` into subsets of the observations for training and validating as part of a **k-fold cross-validation** process.
+Below, you can choose how many "folds" to use and which fold will be used when training our neural network classifier and which fold will be used for training.
+"""
+
 # ╔═╡ c0da3a0b-6aa2-4397-97d3-5076ff1054f7
 function stratified_kfolds(label::AbstractVector, data, num_folds::Integer)
         @assert length(label) == size(data,1)
@@ -222,6 +211,36 @@ function stratified_kfolds(label::AbstractVector, data, num_folds::Integer)
                                                 list_of_folds_idx)
         (;data_train, data_test, folds_idx = list_of_folds_idx)
 end
+
+# ╔═╡ 7e0341a3-e52e-4a19-b9ac-969ebdd2161f
+md"""
+For convenience sake, we'll define several dataframes containing data from your chosen fold.  
+"""
+
+# ╔═╡ ffc98faf-d076-40df-ad6e-94d89f7446f8
+md"""
+## Code to setup neural network
+"""
+
+# ╔═╡ 387a11dd-e46d-4785-aec8-9674e6beaa62
+md"## Simplified functions for training neural network"
+
+# ╔═╡ 7463eefa-b0dd-47c4-8144-0b46262eedf0
+function train_one_iteration!(model_nn::Union{Dense,Chain}, loss::Function, param::Flux.Zygote.Params{PT},
+				train_data::DT, optimizer::Flux.Optimise.AbstractOptimiser
+				) where { PT<:Any, MT1<:AbstractMatrix, MT2<:AbstractMatrix, DT<:Tuple{MT1,MT2} }
+	x, y = train_data
+  	gs = gradient(param) do
+	    loss(x,y)
+	end
+	Flux.Optimise.update!(optimizer, param, gs)
+end
+
+# ╔═╡ afccede8-4563-4a7e-bca4-4754349e73b3
+md"#  Setup & Helper functions"
+
+# ╔═╡ 0102260a-2c3b-4545-a079-037b9c6b0b8d
+md"### Evaluating model"
 
 # ╔═╡ c41187d6-4306-4a92-b10e-c7825e79e79e
 begin
@@ -258,18 +277,6 @@ function calc_classification_diagnostics(model, data, label; threshold = 0.5)
 		num_total, prevalence )
 end
 
-# ╔═╡ 7463eefa-b0dd-47c4-8144-0b46262eedf0
-function train_one_iteration!(model_nn::Union{Dense,Chain}, loss::Function, param::Flux.Zygote.Params{PT},
-				train_data::DT, optimizer::Flux.Optimise.AbstractOptimiser
-				) where { PT<:Any, MT1<:AbstractMatrix, MT2<:AbstractMatrix, DT<:Tuple{MT1,MT2} }
-	x, y = train_data
-	results_train = calc_classification_diagnostics(model_nn, x, y)
-  	gs = gradient(param) do
-	    loss(x,y)
-	end
-	Flux.Optimise.update!(optimizer, param, gs)
-end
-
 # ╔═╡ 7179f3e7-7b8a-468b-847d-5962ce0c1a93
 function my_train!(model_nn::Union{Dense,Chain}, loss::Function, param::Flux.Zygote.Params{PT},
 				train_data::DT, optimizer::Flux.Optimise.AbstractOptimiser;
@@ -301,6 +308,9 @@ function my_train!(model_nn::Union{Dense,Chain}, loss::Function, param::Flux.Zyg
 	end
 	return history
 end
+
+# ╔═╡ d1a0ab47-5c6a-4960-a126-4e65e86a8149
+md"### Plotting"
 
 # ╔═╡ 5cbd25fc-557b-4578-b765-72fcd384d6e0
 function plot_classifier_training_history(h::MVHistory, idx_plt)
@@ -334,6 +344,12 @@ function plot_classifier_training_history(h::MVHistory, idx_plt)
 	plot(plt3, plt1,plt2, layout=l)
 end
 
+# ╔═╡ 7df2b007-5b07-43a1-8407-e1310df57c54
+md"### Appearances"
+
+# ╔═╡ 56529037-956d-4980-875e-85b0eb5644e0
+TableOfContents()
+
 # ╔═╡ 3432a998-b8a9-4d81-a1a2-3ab4c2773a3f
 function aside(x; v_offset=0)
     @htl("""
@@ -361,6 +377,12 @@ function aside(x; v_offset=0)
      """)
 end
 
+# ╔═╡ 06c2301e-7fd1-4790-a16d-2a3cc3cc7b8e
+aside(md"""
+!!! tip 
+    The `gpu` function is nice because it reverts to providing a view of the same data on the CPU if a GPU isn't avaliable.  That way your code can still run (potentially much more slowly) if you're using a without a CUDA-enabled GPU.
+""", v_offset=-160)
+
 # ╔═╡ df0db914-191e-46e6-927d-1a713b50e68b
 aside(md"""
 !!! tip "Tip:"
@@ -373,58 +395,27 @@ aside(md"""
     When you click `submit` or `click` above, the notebook will start training the neural network with specified architecture, learning rate and optimization algorithm. Depending on the network architecture and number of iterations it may take significant time to train the neural network and to update the plot below.  If the progress bar below is less than 100%, then please be patient while the neural network is training.
 	""", v_offset=-170)
 
-# ╔═╡ 56529037-956d-4980-875e-85b0eb5644e0
-TableOfContents()
-
 # ╔═╡ 2bb65491-d291-4d71-ac5d-247538a1871b
 nbsp = html"&nbsp;"
 
 # ╔═╡ 9eea2ceb-94ee-4aa8-8f5e-ffdd4debe174
 @bind num_nodes confirm(PlutoUI.combine() do Child
 md"""
-Nodes in each layer:
+Number of nodes in each layer:
 
-Hidden Layer 1: $(Child("hidden1",NumberField(1:10,default=2)))
+Hidden Layer 1: $(Child("hidden1",NumberField(1:100,default=6)))
 $nbsp $nbsp
-Hidden Layer 2: $(Child("hidden2",NumberField(0:(num_hidden_layers>=2 ? 10 : 0),default=num_hidden_layers>=2 ? 1 : 0)))
+Hidden Layer 2: $(Child("hidden2",NumberField(0:(num_hidden_layers>=2 ? 100 : 0),default=num_hidden_layers>=2 ? 6 : 0)))
 $nbsp $nbsp
-Hidden Layer 3: $(Child("hidden3",NumberField(0:(num_hidden_layers>=3 ? 10 : 0),default=num_hidden_layers>=3 ? 1 : 0)))
+Hidden Layer 3: $(Child("hidden3",NumberField(0:(num_hidden_layers>=3 ? 100 : 0),default=num_hidden_layers>=3 ? 6 : 0)))
 """
 end)
-
-# ╔═╡ c799d55a-2fb9-4b0a-8ebf-12f9cd4b95db
-begin
-	@bind my_opt_param confirm(
-	PlutoUI.combine() do Child
-		md"""
-		Learning Rate:  $( Child("learning_rate",NumberField(0.05:0.05:1, default=0.9)) )
-		$nbsp $nbsp $nbsp
-		Optimizer:  $( Child("type",Select([Descent => "Gradient Descent", Nesterov => 	"Nesterov Momentum", ADAM => "ADAM" ], default=Nesterov)) )
-		$nbsp $nbsp $nbsp
-		Iterations:  $( Child("iterations",NumberField(10:10:2000, default=10)))
-		"""
-	end
-	)
-end
-
-# ╔═╡ 86499d0e-bad3-4954-a740-68cba383d790
-if ready_for_hidden
-md"""
-First iteration to plot: $(@bind first_iter_to_plot_hidden Slider(1:my_opt_param.iterations))
-Last iteration to plot: $(@bind last_iter_to_plot_hidden Slider(1:my_opt_param.iterations,default=my_opt_param.iterations))
-"""
-end
-
-# ╔═╡ a4e39577-39ff-4295-a345-c580a062ad01
-if ready_for_hidden  
-	my_optimizer = my_opt_param.type(my_opt_param.learning_rate)  # Set based on inputs above
-end;
 
 # ╔═╡ 2af3988d-6a46-4ae6-ab77-9de5270bf657
 md"Reinitialize neural network weights with new set of random values: $nbsp $(@bind reinit_my_nn Button())"
 
 # ╔═╡ c33ba176-e1bd-46a8-afca-a3d82eb4bc1a
-if ready_for_hidden
+begin
 	reinit_my_nn  # trigger rerunning this cell when button is clicked
 	if num_hidden_layers == 1
 		model_my_nn = Chain( Dense(6,num_nodes.hidden1, Flux.sigmoid),
@@ -441,10 +432,8 @@ if ready_for_hidden
 	else
 		md"""!!! warn "Invalid number of layers"""
 	end
-	#model_my_nn = model_my_nn |> gpu
 	my_nn_param = Flux.params(model_my_nn)  
-	my_loss(x,y) = Flux.binarycrossentropy(model_my_nn(x), y)
-end;
+end
 
 # ╔═╡ d0f111b8-8b18-4fd4-a119-97d1080834bf
 if CUDA.functional() 
@@ -453,10 +442,42 @@ if CUDA.functional()
 end;
 
 # ╔═╡ 24740804-7333-4e93-aff9-badede5c440c
-if ready_for_hidden
+begin
 	num_param_in_my_nn = sum(length.(my_nn_param))
 	md"Your neural network architecture has $num_hidden_layers hidden layers and a total of $num_param_in_my_nn parameters."
 end
+
+# ╔═╡ 76b35985-414b-44cc-82e3-55c4bf05e371
+begin
+	my_loss(x,y) = Flux.binarycrossentropy(model_my_nn(x), y)
+	loss_gpu(x,y) = Flux.binarycrossentropy(model_gpu(x), y)
+end
+
+# ╔═╡ c799d55a-2fb9-4b0a-8ebf-12f9cd4b95db
+begin
+	@bind my_opt_param confirm(
+	PlutoUI.combine() do Child
+		md"""
+		Learning Rate:  $( Child("learning_rate",NumberField(0.05:0.05:1, default=0.9)) )
+		$nbsp $nbsp $nbsp
+		Optimizer:  $( Child("type",Select([Descent => "Gradient Descent", Nesterov => 	"Nesterov Momentum", ADAM => "ADAM" ], default=Nesterov)) )
+		$nbsp $nbsp $nbsp
+		Iterations:  $( Child("iterations",NumberField(100:100:10_000, default=500)))
+		"""
+	end
+	)
+end
+
+# ╔═╡ 86499d0e-bad3-4954-a740-68cba383d790
+if ready_for_hidden
+md"""
+First iteration to plot: $(@bind first_iter_to_plot_hidden Slider(1:my_opt_param.iterations))
+Last iteration to plot: $(@bind last_iter_to_plot_hidden Slider(1:my_opt_param.iterations,default=my_opt_param.iterations))
+"""
+end
+
+# ╔═╡ a4e39577-39ff-4295-a345-c580a062ad01
+my_optimizer = my_opt_param.type(my_opt_param.learning_rate) # Set based on GUI inputs
 
 # ╔═╡ 608d9156-f8a8-4886-ae87-b1adab904de5
 @bind param_fold confirm(PlutoUI.combine() do Child
@@ -487,48 +508,53 @@ begin
 	validation_y = select(validation_Xy, (:label), copycols=false)
 end;
 
-# ╔═╡ bcbfc7b6-3bb3-4784-9603-6056de12555d
+# ╔═╡ d7726010-ca9b-4e4d-875f-a37f00826199
+begin
+	train_data = (Matrix(train_X)', Matrix(train_y)')
+	validation_data = (Matrix(validation_X)', Matrix(validation_y)')
+end;
+
+# ╔═╡ 41aa218e-06e3-4452-bd8a-a13100912131
 if CUDA.functional() 
-	train_X_gpu = cu(train_X)                # We could use either the cu 
-	train_y_gpu = gpu(train_y)               # or the gpu functions here
-	validation_X_gpu = validation_X |> gpu   # You'll often see it used 
-	validation_y_gpu = validation_y |> gpu   # with this syntax.  
+	train_data_gpu = train_data |> gpu
+	validation_data_gpu = validation_data |> gpu 
 end;
 
 # ╔═╡ 27e29acb-2caa-42f3-a9ae-80e4836c3c53
-# Benchmark on GPU
-if ready_for_hidden && CUDA.functional() 
-	local train_data = (Matrix(train_X_gpu)', Matrix(train_y_gpu)')
-	local validation_data = (Matrix(validation_X_gpu)', Matrix(validation_y_gpu)')
-	
-	# Run once to make sure all the code has been compiled before benchmarking
-	train_one_iteration!(model_gpu, my_loss, param_gpu, train_data_gpu, my_optimizer)
-	# Now time how long it take to perform next iteration
-	benchmark_gpu = @elapsed train_one_iteration!(model_gpu, my_loss, param_gpu, train_data_gpu, my_optimizer)
-end
+if CUDA.functional()   # Benchmark on GPU
+	#num_hidden_layers, num_nodes
+	# Run once to ensure all functions are compiled for given types
+	CUDA.@sync train_one_iteration!(model_gpu, loss_gpu, param_gpu, train_data_gpu, my_optimizer)  
+	# Rerun to benchmark
+	time_per_iteration_gpu = @elapsed( CUDA.@sync train_one_iteration!(model_gpu, loss_gpu, param_gpu, train_data_gpu, my_optimizer)  ) #samples = 1 evals=1
+end;
 
 # ╔═╡ 43ec3626-baf0-4b70-83cb-89f32ed8bf36
-# Benchmark on CPU
-if ready_for_hidden 
-	local train_data = (Matrix(train_X)', Matrix(train_y)')
-	local validation_data = (Matrix(validation_X)', Matrix(validation_y)')
+if benchmark_cpu    # Benchmark on CPU
+	# Run once to ensure all functions are compiled for given types
+	train_one_iteration!(model_my_nn, my_loss, my_nn_param, train_data, my_optimizer) 
+	# Rerun to benchmark
+	time_per_iteration_cpu = @elapsed train_one_iteration!(model_my_nn, my_loss, my_nn_param, train_data, my_optimizer)
+end;
 
-	# Run once to make sure all the code has been compiled before benchmarking
-	train_one_iteration!(model_my_nn, my_loss, my_nn_param, train_data, my_optimizer)
-	# Now time how long it take to perform next iteration
-	benchmark_cpu = @elapsed train_one_iteration!(model_my_nn, my_loss, my_nn_param, train_data, my_optimizer)
+# ╔═╡ b630b78c-8e62-40ac-b6ca-ef8056b2a038
+if benchmark_cpu
+	md"""For your neural network architecture, each iteration takes $(round(time_per_iteration_gpu,digits=3)) seconds on the GPU and $(round(time_per_iteration_cpu,digits=3)) seconds on the CPU.  
+	
+	That's a ratio of **$(round(time_per_iteration_cpu/time_per_iteration_gpu,digits=3))**!
+	"""
+else
+	md"For your neural network architecture, each iteration takes $(round(time_per_iteration_gpu,digits=3)) seconds on the GPU."
 end
 
 # ╔═╡ 7369a73e-a04f-49c9-83f8-82633f8c3efb
 # Train on GPU if avaliable, otherwise on CPU 
-if ready_for_hidden && CUDA.functional() && train_on_gpu
-	local train_data = (Matrix(train_X_gpu)', Matrix(train_y_gpu)')
-	local validation_data = (Matrix(validation_X_gpu)', Matrix(validation_y_gpu)')
-	history_my_nn = my_train!(model_gpu, my_loss, param_gpu, train_data_gpu, my_optimizer, test_data = validation_data_gpu, epochs=my_opt_param.iterations)
+if ready_for_hidden 
+if CUDA.functional() 
+	history_my_nn = my_train!(model_gpu, loss_gpu, param_gpu, train_data_gpu, my_optimizer, test_data = validation_data_gpu, epochs=my_opt_param.iterations)
 else
-	local train_data = (Matrix(train_X)', Matrix(train_y)')
-	local validation_data = (Matrix(validation_X)', Matrix(validation_y)')
 	history_my_nn = my_train!(model_my_nn, my_loss, my_nn_param, train_data, my_optimizer, test_data = validation_data, epochs=my_opt_param.iterations)
+end
 end;
 
 # ╔═╡ 9b55d85d-e5b0-46d6-bce8-6f1cbdd991ee
@@ -539,9 +565,17 @@ end
 # ╔═╡ 9c5a7bb8-2017-45e5-b56e-3745fc775e7c
 br = html"<br />"
 
+# ╔═╡ 83cb30c2-db96-4d68-88f9-09e25b6bfa70
+md"""
+# Benchmarking & Training $br Neural Networks on the GPU
+## Specify the neural network architecure
+Below you can sset a number of hidden layers (up to 3) and number of hidden nodes in each layer. 
+"""
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
@@ -556,6 +590,7 @@ ProgressLogging = "33c8b6b6-d38a-422a-b730-caa89a2f386c"
 ValueHistories = "98cad3c8-aec3-5f06-8e41-884608649ab7"
 
 [compat]
+BenchmarkTools = "~1.3.1"
 CSV = "~0.10.4"
 CUDA = "~3.10.0"
 DataFrames = "~1.3.4"
@@ -573,7 +608,7 @@ ValueHistories = "~0.5.4"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.7.0"
+julia_version = "1.7.2"
 manifest_format = "2.0"
 
 [[deps.AbstractFFTs]]
@@ -636,6 +671,12 @@ uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 git-tree-sha1 = "aebf55e6d7795e02ca500a689d326ac979aaf89e"
 uuid = "9718e550-a3fa-408a-8086-8db961cd8217"
 version = "0.1.1"
+
+[[deps.BenchmarkTools]]
+deps = ["JSON", "Logging", "Printf", "Profile", "Statistics", "UUIDs"]
+git-tree-sha1 = "4c10eee4af024676200bc7752e536f858c6b8f93"
+uuid = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+version = "1.3.1"
 
 [[deps.Bzip2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1460,6 +1501,10 @@ version = "1.3.1"
 deps = ["Unicode"]
 uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 
+[[deps.Profile]]
+deps = ["Printf"]
+uuid = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
+
 [[deps.ProgressLogging]]
 deps = ["Logging", "SHA", "UUIDs"]
 git-tree-sha1 = "80d919dee55b9c50e8d9e2da5eeafff3fe58b539"
@@ -1947,7 +1992,8 @@ version = "0.9.1+5"
 # ╟─b4a59b05-b5ea-4f46-9e93-c0e1f523106f
 # ╠═d0f111b8-8b18-4fd4-a119-97d1080834bf
 # ╟─a5ddca67-7c57-45b9-a7e8-0cc2b342e6da
-# ╠═bcbfc7b6-3bb3-4784-9603-6056de12555d
+# ╠═41aa218e-06e3-4452-bd8a-a13100912131
+# ╟─06c2301e-7fd1-4790-a16d-2a3cc3cc7b8e
 # ╟─67995b86-9706-424f-ba21-2698e7e83417
 # ╟─83cb30c2-db96-4d68-88f9-09e25b6bfa70
 # ╟─df0db914-191e-46e6-927d-1a713b50e68b
@@ -1955,45 +2001,53 @@ version = "0.9.1+5"
 # ╟─9eea2ceb-94ee-4aa8-8f5e-ffdd4debe174
 # ╟─24740804-7333-4e93-aff9-badede5c440c
 # ╟─ffd43619-b774-4bff-9a44-c7daf0ec7bcf
-# ╠═43ec3626-baf0-4b70-83cb-89f32ed8bf36
-# ╠═27e29acb-2caa-42f3-a9ae-80e4836c3c53
+# ╟─d54fa17a-9bab-4034-97b9-902880901a3a
+# ╟─43ec3626-baf0-4b70-83cb-89f32ed8bf36
+# ╟─27e29acb-2caa-42f3-a9ae-80e4836c3c53
+# ╟─b630b78c-8e62-40ac-b6ca-ef8056b2a038
 # ╟─8eed2ad1-f58c-490e-b612-17cf44795337
 # ╟─2a69344b-dcb4-4a82-beaf-a787d63f632e
 # ╟─1009975c-9a8b-40f6-b9c5-b69820adc6b1
-# ╟─c799d55a-2fb9-4b0a-8ebf-12f9cd4b95db
 # ╟─2af3988d-6a46-4ae6-ab77-9de5270bf657
+# ╟─c799d55a-2fb9-4b0a-8ebf-12f9cd4b95db
 # ╟─83d2d3c5-f8ec-4bd6-9660-4dda9db75131
 # ╟─7369a73e-a04f-49c9-83f8-82633f8c3efb
-# ╠═9b55d85d-e5b0-46d6-bce8-6f1cbdd991ee
+# ╟─9b55d85d-e5b0-46d6-bce8-6f1cbdd991ee
 # ╟─86499d0e-bad3-4954-a740-68cba383d790
 # ╟─8480c2db-3e21-46d8-9725-554904cdb754
+# ╟─89809f9d-e024-4676-bd04-e3af88a39215
 # ╟─f829ad0c-9e7a-4e92-9f6b-86786ed317e6
 # ╟─783788a0-6f9a-4225-98e6-5030d9f21712
 # ╠═49f371db-1ad1-4f1c-b5e2-c00a52035c6a
+# ╟─86744470-2b37-45c1-ab76-af838c122378
 # ╠═85066779-be0f-43a3-bde8-c4ab5a3e5ca3
 # ╟─1c792c1d-f1e8-4e5f-8a76-5c7ca5fb8587
 # ╟─26635f45-1e34-4025-8151-2185d8d84e06
 # ╠═0985bcc3-e686-4aa9-b832-0141cb27c4a4
 # ╟─ffe4cdc7-4863-4f0e-b790-4b86afcc56b8
+# ╟─c0da3a0b-6aa2-4397-97d3-5076ff1054f7
 # ╟─608d9156-f8a8-4886-ae87-b1adab904de5
 # ╟─ca25abcc-4f7e-4ace-861b-c8f0416584ed
 # ╟─7e0341a3-e52e-4a19-b9ac-969ebdd2161f
-# ╠═ffc98faf-d076-40df-ad6e-94d89f7446f8
 # ╠═6f2c856c-3bd3-4d35-be93-1b78c68c6b29
-# ╠═aca55f65-b364-4c20-8cc1-1dd0d4102ea1
+# ╠═d7726010-ca9b-4e4d-875f-a37f00826199
+# ╟─ffc98faf-d076-40df-ad6e-94d89f7446f8
 # ╠═c33ba176-e1bd-46a8-afca-a3d82eb4bc1a
+# ╠═76b35985-414b-44cc-82e3-55c4bf05e371
 # ╠═a4e39577-39ff-4295-a345-c580a062ad01
-# ╟─afccede8-4563-4a7e-bca4-4754349e73b3
-# ╠═423cb435-ab09-426e-a29a-0b894fc767ba
-# ╠═86744470-2b37-45c1-ab76-af838c122378
-# ╟─c0da3a0b-6aa2-4397-97d3-5076ff1054f7
-# ╟─c41187d6-4306-4a92-b10e-c7825e79e79e
-# ╟─7931116b-3b3f-455c-80aa-17de872a8965
+# ╟─387a11dd-e46d-4785-aec8-9674e6beaa62
 # ╠═7463eefa-b0dd-47c4-8144-0b46262eedf0
 # ╠═7179f3e7-7b8a-468b-847d-5962ce0c1a93
+# ╟─afccede8-4563-4a7e-bca4-4754349e73b3
+# ╠═423cb435-ab09-426e-a29a-0b894fc767ba
+# ╟─0102260a-2c3b-4545-a079-037b9c6b0b8d
+# ╟─c41187d6-4306-4a92-b10e-c7825e79e79e
+# ╟─7931116b-3b3f-455c-80aa-17de872a8965
+# ╟─d1a0ab47-5c6a-4960-a126-4e65e86a8149
 # ╟─5cbd25fc-557b-4578-b765-72fcd384d6e0
-# ╠═3432a998-b8a9-4d81-a1a2-3ab4c2773a3f
+# ╟─7df2b007-5b07-43a1-8407-e1310df57c54
 # ╠═56529037-956d-4980-875e-85b0eb5644e0
+# ╟─3432a998-b8a9-4d81-a1a2-3ab4c2773a3f
 # ╟─2bb65491-d291-4d71-ac5d-247538a1871b
 # ╟─9c5a7bb8-2017-45e5-b56e-3745fc775e7c
 # ╟─00000000-0000-0000-0000-000000000001
