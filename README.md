@@ -6,8 +6,8 @@
 
 -----
 This repository contains the following computational notebooks and supporting files: 
-- gpu_linear_algebra.ipynb (Jupyter notebook):  Compare performance of CPU and GPU for common linear algebra tasks
-- gpu_neural_network.jl:  Compare performance of CPU & GPU for training a neural network
+- gpu_linear_algebra.ipynb ([Jupyter notebook](https://github.com/Astroinformatics/HighPerformanceComputing/blob/main/gpu_linear_algebra.ipynb)):  Compare performance of CPU and GPU for common linear algebra tasks
+- gpu_neuralnetwork.jl ([Pluto notebook](https://astroinformatics.github.io/HighPerformanceComputing/gpu_neuralnetwork.jl.html)):  Compare performance of CPU & GPU for training a neural network
 
 Files ending in .jl are Pluto notebooks and files ending in .ipynb are Jupyter notebooks, both written in Julia.
 Labs do not assume familiarity with Julia.  While it can be useful to "read" selected portions of the code, the lab tutorials aim to emphasize understanding how algorithms work, while minimizing need to pay attention to a language's syntax.
