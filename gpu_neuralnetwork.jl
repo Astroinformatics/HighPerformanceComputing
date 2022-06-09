@@ -33,7 +33,7 @@ end
 
 # ╔═╡ 1d8fe699-810b-44ba-a9cd-80816338e08c
 md"""
-# Lab 17: Accelerating Neural Networks with GPU
+# Lab 18: Accelerating Neural Networks with GPU
 #### [Penn State Astroinformatics Summer School 2022](https://sites.psu.edu/astrostatistics/astroinfo-su22-program/)
 #### [Eric Ford](https://www.personal.psu.edu/ebf11)
 """
