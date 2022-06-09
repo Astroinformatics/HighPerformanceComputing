@@ -538,11 +538,13 @@ if benchmark_cpu    # Benchmark on CPU
 end;
 
 # ╔═╡ b630b78c-8e62-40ac-b6ca-ef8056b2a038
-if benchmark_cpu
+if benchmark_cpu &&  CUDA.functional()
 	md"""For your neural network architecture, each iteration takes $(round(time_per_iteration_gpu,digits=3)) seconds on the GPU and $(round(time_per_iteration_cpu,digits=3)) seconds on the CPU.  
 	
 	That's a ratio of **$(round(time_per_iteration_cpu/time_per_iteration_gpu,digits=3))**!
 	"""
+elseif benchmark_cpu && !CUDA.functional()
+	md"For your neural network architecture, each iteration takes $(round(time_per_iteration_cpu,digits=3)) seconds on the CPU."
 else
 	md"For your neural network architecture, each iteration takes $(round(time_per_iteration_gpu,digits=3)) seconds on the GPU."
 end
